@@ -2,34 +2,39 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.IO;
-using System.Reflection;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using Microsoft.Extensions.DependencyModel.Serialization;
+using Newtonsoft.Json.Linq;
+using NuGet.Frameworks;
 
 namespace Microsoft.Extensions.DependencyModel
 {
     public class DependencyContext
     {
-        private const string DepsResourceSufix = ".deps.json";
-
         private static Lazy<DependencyContext> _defaultContext = new Lazy<DependencyContext>(LoadDefault);
 
-        public DependencyContext(string target, string runtime, CompilationOptions compilationOptions, CompilationLibrary[] compileLibraries, RuntimeLibrary[] runtimeLibraries)
+        public DependencyContext(NuGetFramework targetFramework, string runtimeIdentifier, CompilationOptions compilationOptions, JObject runtimeOptions, CompilationLibrary[] compileLibraries, RuntimeLibrary[] runtimeLibraries)
         {
-            Target = target;
-            Runtime = runtime;
-            CompilationOptions = compilationOptions;
+            RuntimeOptions = runtimeOptions;
+            TargetFramework = targetFramework;
             CompileLibraries = compileLibraries;
             RuntimeLibraries = runtimeLibraries;
+            RuntimeIdentifier = runtimeIdentifier;
+            CompilationOptions = compilationOptions;
         }
 
         public static DependencyContext Default => _defaultContext.Value;
 
-        public string Target { get; }
+        public NuGetFramework TargetFramework { get; }
 
-        public string Runtime { get; }
+        public string RuntimeIdentifier { get; }
 
         public CompilationOptions CompilationOptions { get; }
+
+        public JObject RuntimeOptions { get; }
 
         public IReadOnlyList<CompilationLibrary> CompileLibraries { get; }
 
@@ -38,22 +43,58 @@ namespace Microsoft.Extensions.DependencyModel
         private static DependencyContext LoadDefault()
         {
             var entryAssembly = (Assembly)typeof(Assembly).GetTypeInfo().GetDeclaredMethod("GetEntryAssembly").Invoke(null, null);
-            var stream = entryAssembly.GetManifestResourceStream(entryAssembly.GetName().Name + DepsResourceSufix);
+            var location = entryAssembly.Location;
+            var runtimeConfig = Path.Combine(
+                Path.GetDirectoryName(location),
+                LockFile.RuntimeConfigFileName);
 
-            if (stream == null)
+            if (!File.Exists(runtimeConfig))
             {
-                throw new InvalidOperationException("Entry assembly was compiled without `preserveCompilationContext` enabled");
-            }
-
-            using (stream)
-            {
+                // Try reading the old embedded file
+                var stream = entryAssembly.GetManifestResourceStream(entryAssembly.GetName().Name + ".deps.json");
+                if (stream == null)
+                {
+                    throw new InvalidOperationException("Entry assembly was compiled without `preserveCompilationContext` enabled");
+                }
                 return Load(stream);
+            }
+            else
+            {
+                using (var stream = new FileStream(runtimeConfig, FileMode.Open, FileAccess.Read))
+                {
+                    return Load(stream);
+                }
             }
         }
 
         public static DependencyContext Load(Stream stream)
         {
-            return new DependencyContextReader().Read(stream);
+            var lockFile = LockFileFormat.Read(stream);
+            return DependencyContextConverter.CreateFromLockFile(lockFile);
+        }
+
+        public void Write(Stream stream)
+        {
+            Write(stream, preserveCompilationContext: false);
+        }
+
+        public void Write(string outputPath)
+        {
+            Write(outputPath, preserveCompilationContext: false);
+        }
+
+        public void Write(Stream stream, bool preserveCompilationContext)
+        {
+            var lockFile = DependencyContextConverter.CreateLockFile(this, preserveCompilationContext);
+            LockFileFormat.Write(stream, lockFile);
+        }
+
+        public void Write(string outputPath, bool preserveCompilationContext)
+        {
+            using(var fs = new FileStream(outputPath, FileMode.Create, FileAccess.ReadWrite))
+            {
+                Write(fs, preserveCompilationContext);
+            }
         }
     }
 }

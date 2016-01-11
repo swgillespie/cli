@@ -4,7 +4,11 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
+using NuGet.Frameworks;
+using NuGet.Packaging.Core;
+using NuGet.Versioning;
 
 namespace Microsoft.Extensions.DependencyModel
 {
@@ -12,10 +16,10 @@ namespace Microsoft.Extensions.DependencyModel
     {
         private static Lazy<Assembly> _entryAssembly = new Lazy<Assembly>(GetEntryAssembly);
 
-        public CompilationLibrary(string libraryType, string packageName, string version, string hash, string[] assemblies, Dependency[] dependencies, bool serviceable)
-            : base(libraryType, packageName, version, hash,  dependencies, serviceable)
+        public CompilationLibrary(string libraryType, string packageName, NuGetVersion version, NuGetFramework targetFramework, string hash, IEnumerable<string> assemblies, IEnumerable<string> frameworkAssemblies, IEnumerable<PackageDependency> dependencies, bool serviceable)
+            : base(libraryType, packageName, version, targetFramework, hash,  dependencies, frameworkAssemblies, serviceable)
         {
-            Assemblies = assemblies;
+            Assemblies = assemblies.ToList().AsReadOnly();
         }
 
         public IReadOnlyList<string> Assemblies { get; }

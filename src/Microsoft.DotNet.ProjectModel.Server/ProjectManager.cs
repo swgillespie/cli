@@ -9,6 +9,7 @@ using System.Threading;
 using Microsoft.DotNet.ProjectModel.Server.Helpers;
 using Microsoft.DotNet.ProjectModel.Server.Messengers;
 using Microsoft.DotNet.ProjectModel.Server.Models;
+using Microsoft.Extensions.DependencyModel.Serialization;
 using Microsoft.Extensions.Logging;
 using NuGet.Frameworks;
 

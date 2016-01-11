@@ -15,10 +15,6 @@
         "NuGet.Packaging": "3.3.0-*",
 
         "Microsoft.Extensions.FileSystemGlobbing": "1.0.0-rc2-15882",
-        "Microsoft.Extensions.JsonParser.Sources": {
-            "type": "build",
-            "version": "1.0.0-*"
-        },
         "Microsoft.Extensions.HashCodeCombiner.Sources": {
             "type": "build",
             "version": "1.0.0-*"

@@ -7,7 +7,7 @@ using NuGet.Frameworks;
 using NuGet.Packaging.Core;
 using NuGet.Versioning;
 
-namespace Microsoft.DotNet.ProjectModel.Graph
+namespace Microsoft.Extensions.DependencyModel.Serialization
 {
     public class LockFileTargetLibrary
     {

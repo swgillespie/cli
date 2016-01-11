@@ -6,13 +6,35 @@ using System.Linq;
 using Microsoft.DotNet.ProjectModel;
 using Microsoft.DotNet.ProjectModel.Compilation;
 using Microsoft.DotNet.ProjectModel.Graph;
+using Newtonsoft.Json.Linq;
 using NuGet.Frameworks;
+using NuGet.Packaging.Core;
+using NuGet.Versioning;
 
 namespace Microsoft.Extensions.DependencyModel
 {
     public static class DependencyContextBuilder
     {
-        public static DependencyContext Build(CommonCompilerOptions compilerOptions, LibraryExporter libraryExporter, string configuration, NuGetFramework target, string runtime)
+        public static DependencyContext Build(
+            ProjectContext context,
+            string configuration)
+        {
+            return Build(
+                context.ProjectFile.RuntimeOptions,
+                context.ProjectFile.GetCompilerOptions(context.TargetFramework, configuration),
+                context.CreateExporter(configuration),
+                configuration,
+                context.TargetFramework,
+                context.RuntimeIdentifier);
+        }
+
+        public static DependencyContext Build(
+            JObject runtimeOptions,
+            CommonCompilerOptions compilerOptions,
+            LibraryExporter libraryExporter,
+            string configuration,
+            NuGetFramework target,
+            string runtime)
         {
             var dependencies = libraryExporter.GetAllExports().Where(export => export.Library.Framework.Equals(target)).ToList();
 
@@ -22,11 +44,14 @@ namespace Microsoft.Extensions.DependencyModel
                 .OrderBy(export => export.Library.Identity.Type == LibraryType.ReferenceAssembly)
                 .GroupBy(export => export.Library.Identity.Name)
                 .Select(exports => exports.First())
-                .Select(export => new Dependency(export.Library.Identity.Name, export.Library.Identity.Version.ToString()))
-                .ToDictionary(dependency => dependency.Name);
+                .Select(export => new PackageDependency(export.Library.Identity.Name, new VersionRange(export.Library.Identity.Version)))
+                .ToDictionary(dependency => dependency.Id);
 
-            return new DependencyContext(target.DotNetFrameworkName, runtime,
+            return new DependencyContext(
+                target,
+                runtime,
                 GetCompilationOptions(compilerOptions),
+                runtimeOptions,
                 GetLibraries(dependencies, dependencyLookup, target, configuration, runtime: false).Cast<CompilationLibrary>().ToArray(),
                 GetLibraries(dependencies, dependencyLookup, target, configuration, runtime: true).Cast<RuntimeLibrary>().ToArray());
         }
@@ -47,7 +72,7 @@ namespace Microsoft.Extensions.DependencyModel
         }
 
         private static IEnumerable<Library> GetLibraries(IEnumerable<LibraryExport> dependencies,
-            IDictionary<string, Dependency> dependencyLookup,
+            IDictionary<string, PackageDependency> dependencyLookup,
             NuGetFramework target,
             string configuration,
             bool runtime)
@@ -59,23 +84,28 @@ namespace Microsoft.Extensions.DependencyModel
             NuGetFramework target,
             string configuration,
             bool runtime,
-            IDictionary<string, Dependency> dependencyLookup)
+            IDictionary<string, PackageDependency> dependencyLookup)
         {
             var type = export.Library.Identity.Type.Value.ToLowerInvariant();
 
             var serviceable = (export.Library as PackageDescription)?.Library.IsServiceable ?? false;
-            var libraryDependencies = new List<Dependency>();
+            var libraryDependencies = new List<PackageDependency>();
 
             var libraryAssets = runtime ? export.RuntimeAssemblies : export.CompilationAssemblies;
 
-            foreach (var libraryDependency in export.Library.Dependencies)
+            // Skip framework assembly references, they will be processed separately
+            foreach (var libraryDependency in export.Library.Dependencies.Where(r => !r.Target.Equals(LibraryType.ReferenceAssembly)))
             {
-                Dependency dependency;
+                PackageDependency dependency;
                 if (dependencyLookup.TryGetValue(libraryDependency.Name, out dependency))
                 {
                     libraryDependencies.Add(dependency);
                 }
             }
+
+            var frameworkAssemblies = export.Library.Dependencies
+                .Where(r => r.Target.Equals(LibraryType.ReferenceAssembly))
+                .Select(r => r.Name);
 
             string[] assemblies;
             if (type == "project")
@@ -100,24 +130,27 @@ namespace Microsoft.Extensions.DependencyModel
                 return new RuntimeLibrary(
                     type,
                     export.Library.Identity.Name,
-                    export.Library.Identity.Version.ToString(),
+                    export.Library.Identity.Version,
+                    export.Library.Framework,
                     export.Library.Hash,
                     assemblies,
+                    export.NativeLibraries.Select(l => l.RelativePath),
+                    frameworkAssemblies,
                     libraryDependencies.ToArray(),
-                    serviceable
-                    );
+                    serviceable);
             }
             else
             {
                 return new CompilationLibrary(
                     type,
                     export.Library.Identity.Name,
-                    export.Library.Identity.Version.ToString(),
+                    export.Library.Identity.Version,
+                    export.Library.Framework,
                     export.Library.Hash,
                     assemblies,
+                    frameworkAssemblies,
                     libraryDependencies.ToArray(),
-                    serviceable
-                   );
+                    serviceable);
             }
         }
     }

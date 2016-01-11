@@ -1,11 +1,9 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
-using Microsoft.Extensions.JsonParser.Sources;
+using Newtonsoft.Json.Linq;
 
 namespace Microsoft.DotNet.ProjectModel.Files
 {
@@ -35,10 +33,10 @@ namespace Microsoft.DotNet.ProjectModel.Files
         private readonly string _projectDirectory;
         private readonly string _projectFilePath;
 
-        private JsonObject _rawProject;
+        private JObject _rawProject;
         private bool _initialized;
 
-        internal ProjectFilesCollection(JsonObject rawProject, string projectDirectory, string projectFilePath)
+        internal ProjectFilesCollection(JObject rawProject, string projectDirectory, string projectFilePath)
         {
             _projectDirectory = projectDirectory;
             _projectFilePath = projectFilePath;
@@ -79,12 +77,12 @@ namespace Microsoft.DotNet.ProjectModel.Files
             _namedResources = NamedResourceReader.ReadNamedResources(_rawProject, _projectFilePath);
 
             // Files to be packed along with the project
-            var packIncludeJson = _rawProject.ValueAsJsonObject(PackIncludePropertyName);
+            var packIncludeJson = _rawProject.Value<JObject>(PackIncludePropertyName);
             if (packIncludeJson != null)
             {
                 _packInclude = packIncludeJson
-                    .Keys
-                    .Select(k => new PackIncludeEntry(k, packIncludeJson.Value(k)))
+                    .Properties()
+                    .Select(p => new PackIncludeEntry(p.Name, p.Value))
                     .ToList();
             }
             else

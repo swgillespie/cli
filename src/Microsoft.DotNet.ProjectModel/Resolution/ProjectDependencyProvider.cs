@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.DotNet.ProjectModel.Graph;
+using Microsoft.Extensions.DependencyModel.Serialization;
 using NuGet.Frameworks;
 
 namespace Microsoft.DotNet.ProjectModel.Resolution

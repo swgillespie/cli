@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using Microsoft.DotNet.ProjectModel;
 using Microsoft.DotNet.ProjectModel.Graph;
 using NuGet.Packaging;
+using Microsoft.Extensions.DependencyModel.Serialization;
 
 namespace Microsoft.DotNet.Cli.Utils
 {
@@ -121,7 +122,7 @@ namespace Microsoft.DotNet.Cli.Utils
                 return null;
             }
 
-            var lockFile = LockFileReader.Read(lockPath);
+            var lockFile = LockFileFormat.Read(lockPath);
 
             var lib = lockFile.PackageLibraries.FirstOrDefault(l => l.Name == commandName);
             var packageDir = new VersionFolderPathResolver(context.PackagesDirectory)

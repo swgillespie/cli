@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Extensions.DependencyModel
 {
@@ -52,6 +53,53 @@ namespace Microsoft.Extensions.DependencyModel
             PublicSign = publicSign;
             EmitEntryPoint = emitEntryPoint;
             GenerateXmlDocumentation = generateXmlDocumentation;
+        }
+
+        internal JObject ToJson()
+        {
+            var o = new JObject();
+            if (Defines != null)
+            {
+                o[DependencyContextStrings.DefinesPropertyName] = new JArray(Defines);
+            }
+            if (LanguageVersion != null)
+            {
+                o[DependencyContextStrings.LanguageVersionPropertyName] = LanguageVersion;
+            }
+            if (Platform != null)
+            {
+                o[DependencyContextStrings.PlatformPropertyName] = Platform;
+            }
+            if (AllowUnsafe != null)
+            {
+                o[DependencyContextStrings.AllowUnsafePropertyName] = AllowUnsafe;
+            }
+            if (WarningsAsErrors != null)
+            {
+                o[DependencyContextStrings.WarningsAsErrorsPropertyName] = WarningsAsErrors;
+            }
+            if (Optimize != null)
+            {
+                o[DependencyContextStrings.OptimizePropertyName] = Optimize;
+            }
+            if (KeyFile != null)
+            {
+                o[DependencyContextStrings.KeyFilePropertyName] = KeyFile;
+            }
+            if (DelaySign != null)
+            {
+                o[DependencyContextStrings.DelaySignPropertyName] = DelaySign;
+            }
+            if (PublicSign != null)
+            {
+                o[DependencyContextStrings.PublicSignPropertyName] = PublicSign;
+            }
+            if (EmitEntryPoint != null)
+            {
+                o[DependencyContextStrings.EmitEntryPointPropertyName] = EmitEntryPoint;
+            }
+
+            return o;
         }
     }
 }

@@ -4,7 +4,7 @@
 using System.Collections.Generic;
 using NuGet.Frameworks;
 
-namespace Microsoft.DotNet.ProjectModel
+namespace Microsoft.Extensions.DependencyModel.Serialization
 {
     public class ProjectFileDependencyGroup
     {

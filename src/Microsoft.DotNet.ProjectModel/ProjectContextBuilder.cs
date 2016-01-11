@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using Microsoft.DotNet.ProjectModel.Graph;
 using Microsoft.DotNet.ProjectModel.Resolution;
+using Microsoft.Extensions.DependencyModel.Serialization;
 using Microsoft.Extensions.Internal;
 using NuGet.Frameworks;
 
@@ -205,7 +206,7 @@ namespace Microsoft.DotNet.ProjectModel
                 diagnostics.Add(new DiagnosticMessage(
                     ErrorCodes.NU1009,
                     $"The expected lock file doesn't exist. Please run \"dotnet restore\" to generate a new lock file.",
-                    Path.Combine(Project.ProjectDirectory, LockFile.FileName),
+                    Path.Combine(Project.ProjectDirectory, LockFile.LockFileName),
                     DiagnosticMessageSeverity.Error));
             }
 
@@ -214,7 +215,7 @@ namespace Microsoft.DotNet.ProjectModel
                 diagnostics.Add(new DiagnosticMessage(
                     ErrorCodes.NU1006,
                     $"{lockFileValidationMessage}. Please run \"dotnet restore\" to generate a new lock file.",
-                    Path.Combine(Project.ProjectDirectory, LockFile.FileName),
+                    Path.Combine(Project.ProjectDirectory, LockFile.LockFileName),
                     DiagnosticMessageSeverity.Warning));
             }
 
@@ -398,9 +399,9 @@ namespace Microsoft.DotNet.ProjectModel
 
         private static LockFile ResolveLockFile(string projectDir)
         {
-            var projectLockJsonPath = Path.Combine(projectDir, LockFile.FileName);
+            var projectLockJsonPath = Path.Combine(projectDir, LockFile.LockFileName);
             return File.Exists(projectLockJsonPath) ?
-                        LockFileReader.Read(Path.Combine(projectDir, LockFile.FileName)) :
+                        LockFileFormat.Read(Path.Combine(projectDir, LockFile.LockFileName)) :
                         null;
         }
 

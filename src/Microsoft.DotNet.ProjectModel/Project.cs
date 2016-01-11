@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using Microsoft.DotNet.ProjectModel.Files;
 using Microsoft.DotNet.ProjectModel.Graph;
+using Newtonsoft.Json.Linq;
 using NuGet.Frameworks;
 using NuGet.Versioning;
 
@@ -81,6 +82,8 @@ namespace Microsoft.DotNet.ProjectModel
         public string TestRunner { get; set; }
 
         public ProjectFilesCollection Files { get; set; }
+
+        public JObject RuntimeOptions { get; set; }
 
         public IDictionary<string, string> Commands { get; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 

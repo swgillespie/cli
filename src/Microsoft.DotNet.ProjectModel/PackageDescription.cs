@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using Microsoft.DotNet.ProjectModel.Graph;
+using Microsoft.Extensions.DependencyModel.Serialization;
 
 namespace Microsoft.DotNet.ProjectModel
 {

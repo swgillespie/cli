@@ -12,6 +12,8 @@ using Microsoft.DotNet.ProjectModel;
 using Microsoft.DotNet.ProjectModel.Compilation;
 using Microsoft.DotNet.ProjectModel.Graph;
 using Microsoft.DotNet.Tools.Common;
+using Microsoft.Extensions.DependencyModel;
+using Microsoft.Extensions.DependencyModel.Serialization;
 using NuGet.Frameworks;
 
 namespace Microsoft.DotNet.Cli.Compiler.Common
@@ -72,7 +74,7 @@ namespace Microsoft.DotNet.Cli.Compiler.Common
             return rootOutputPath;
         }
         
-        public static void MakeCompilationOutputRunnable(this ProjectContext context, string outputPath, string configuration)
+        public static void MakeCompilationOutputRunnable(this ProjectContext context, string outputPath, string configuration, DependencyContext dependencyContext, bool preserveCompilationContext)
         {
             context
                 .ProjectFile
@@ -101,6 +103,10 @@ namespace Microsoft.DotNet.Cli.Compiler.Common
                 exporter.GetDependencies(LibraryType.Project)
                     .SelectMany(e => e.RuntimeAssets())
                     .CopyTo(outputPath);
+
+                // Generate runtime config file based on the dependency context
+                dependencyContext
+                    .Write(Path.Combine(outputPath, LockFile.RuntimeConfigFileName), preserveCompilationContext);
 
                 CoreHost.CopyTo(outputPath, context.ProjectFile.Name + Constants.ExeSuffix);
             }

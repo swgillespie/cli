@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using NuGet.Versioning;
 
-namespace Microsoft.DotNet.ProjectModel.Graph
+namespace Microsoft.Extensions.DependencyModel.Serialization
 {
     public class LockFileLookup
     {

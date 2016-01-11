@@ -13,6 +13,7 @@ using Microsoft.DotNet.ProjectModel;
 using Microsoft.DotNet.ProjectModel.Graph;
 using NuGet.Frameworks;
 using Microsoft.Extensions.PlatformAbstractions;
+using Microsoft.Extensions.DependencyModel;
 
 namespace Microsoft.DotNet.Tools.Restore
 {
@@ -150,7 +151,11 @@ namespace Microsoft.DotNet.Tools.Restore
                 Path.GetDirectoryName(toolDescription.Target.RuntimeAssemblies.First().Path),
                 toolDescription.Identity.Name + FileNameSuffixes.Deps);
             
-            context.MakeCompilationOutputRunnable(context.ProjectDirectory, Constants.DefaultConfiguration);
+            context.MakeCompilationOutputRunnable(
+                context.ProjectDirectory,
+                Constants.DefaultConfiguration,
+                DependencyContextBuilder.Build(context, Constants.DefaultConfiguration),
+                preserveCompilationContext: false);
 
             if (File.Exists(depsPath)) File.Delete(depsPath);
 

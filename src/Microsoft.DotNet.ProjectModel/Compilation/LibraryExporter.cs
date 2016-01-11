@@ -9,6 +9,7 @@ using System.Linq;
 using Microsoft.DotNet.ProjectModel.Graph;
 using Microsoft.DotNet.ProjectModel.Resolution;
 using Microsoft.DotNet.ProjectModel.Utilities;
+using Microsoft.Extensions.DependencyModel.Serialization;
 using NuGet.Frameworks;
 
 namespace Microsoft.DotNet.ProjectModel.Compilation

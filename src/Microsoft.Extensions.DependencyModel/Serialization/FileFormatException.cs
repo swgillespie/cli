@@ -2,9 +2,9 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using Microsoft.Extensions.JsonParser.Sources;
+using Newtonsoft.Json;
 
-namespace Microsoft.DotNet.ProjectModel
+namespace Microsoft.Extensions.DependencyModel.Serialization
 {
     public sealed class FileFormatException : Exception
     {
@@ -27,13 +27,14 @@ namespace Microsoft.DotNet.ProjectModel
             return $"{Path}({Line},{Column}): Error: {base.ToString()}";
         }
 
-        internal static FileFormatException Create(Exception exception, string filePath)
+        public static FileFormatException Create(Exception exception, string filePath)
         {
-            if (exception is JsonDeserializerException)
+            var readerException = exception as JsonReaderException;
+            if (readerException != null)
             {
                 return new FileFormatException(exception.Message, exception)
                    .WithFilePath(filePath)
-                   .WithLineInfo((JsonDeserializerException)exception);
+                   .WithLineInfo(readerException);
             }
             else
             {
@@ -42,7 +43,7 @@ namespace Microsoft.DotNet.ProjectModel
             }
         }
 
-        internal static FileFormatException Create(Exception exception, JsonValue jsonValue, string filePath)
+        public static FileFormatException Create(Exception exception, IJsonLineInfo jsonValue, string filePath)
         {
             var result = Create(exception, jsonValue)
                 .WithFilePath(filePath);
@@ -50,7 +51,7 @@ namespace Microsoft.DotNet.ProjectModel
             return result;
         }
 
-        internal static FileFormatException Create(Exception exception, JsonValue jsonValue)
+        public static FileFormatException Create(Exception exception, IJsonLineInfo jsonValue)
         {
             var result = new FileFormatException(exception.Message, exception)
                 .WithLineInfo(jsonValue);
@@ -58,7 +59,7 @@ namespace Microsoft.DotNet.ProjectModel
             return result;
         }
 
-        internal static FileFormatException Create(string message, JsonValue jsonValue, string filePath)
+        public static FileFormatException Create(string message, IJsonLineInfo jsonValue, string filePath)
         {
             var result = Create(message, jsonValue)
                 .WithFilePath(filePath);
@@ -66,7 +67,7 @@ namespace Microsoft.DotNet.ProjectModel
             return result;
         }
 
-        internal static FileFormatException Create(string message, string filePath)
+        public static FileFormatException Create(string message, string filePath)
         {
             var result = new FileFormatException(message)
                 .WithFilePath(filePath);
@@ -74,7 +75,7 @@ namespace Microsoft.DotNet.ProjectModel
             return result;
         }
 
-        internal static FileFormatException Create(string message, JsonValue jsonValue)
+        public static FileFormatException Create(string message, IJsonLineInfo jsonValue)
         {
             var result = new FileFormatException(message)
                 .WithLineInfo(jsonValue);
@@ -82,7 +83,7 @@ namespace Microsoft.DotNet.ProjectModel
             return result;
         }
 
-        internal FileFormatException WithFilePath(string path)
+        public FileFormatException WithFilePath(string path)
         {
             if (path == null)
             {
@@ -94,28 +95,28 @@ namespace Microsoft.DotNet.ProjectModel
             return this;
         }
 
-        private FileFormatException WithLineInfo(JsonValue value)
+        public FileFormatException WithLineInfo(IJsonLineInfo value)
         {
             if (value == null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
 
-            Line = value.Line;
-            Column = value.Column;
+            Line = value.LineNumber;
+            Column = value.LinePosition;
 
             return this;
         }
 
-        private FileFormatException WithLineInfo(JsonDeserializerException exception)
+        public FileFormatException WithLineInfo(JsonReaderException exception)
         {
             if (exception == null)
             {
                 throw new ArgumentNullException(nameof(exception));
             }
 
-            Line = exception.Line;
-            Column = exception.Column;
+            Line = exception.LineNumber;
+            Column = exception.LinePosition;
 
             return this;
         }

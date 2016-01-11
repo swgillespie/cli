@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.DotNet.ProjectModel.Graph;
+using Microsoft.Extensions.DependencyModel.Serialization;
 
 namespace Microsoft.DotNet.ProjectModel
 {
@@ -193,7 +194,7 @@ namespace Microsoft.DotNet.ProjectModel
             {
                 currentEntry = new FileModelEntry<LockFile>();
             }
-            else if (!File.Exists(Path.Combine(projectDirectory, LockFile.FileName)))
+            else if (!File.Exists(Path.Combine(projectDirectory, LockFile.LockFileName)))
             {
                 currentEntry.Reset();
                 return currentEntry;
@@ -201,8 +202,8 @@ namespace Microsoft.DotNet.ProjectModel
 
             if (currentEntry.IsInvalid)
             {
-                currentEntry.FilePath = Path.Combine(projectDirectory, LockFile.FileName);
-                currentEntry.Model = LockFileReader.Read(currentEntry.FilePath);
+                currentEntry.FilePath = Path.Combine(projectDirectory, LockFile.LockFileName);
+                currentEntry.Model = LockFileFormat.Read(currentEntry.FilePath);
                 currentEntry.UpdateLastWriteTime();
             }
 
@@ -246,7 +247,7 @@ namespace Microsoft.DotNet.ProjectModel
                 currentEntry.ProjectFilePath = project.ProjectFilePath;
                 currentEntry.LastProjectFileWriteTime = File.GetLastWriteTime(currentEntry.ProjectFilePath);
 
-                var lockFilePath = Path.Combine(project.ProjectDirectory, LockFile.FileName);
+                var lockFilePath = Path.Combine(project.ProjectDirectory, LockFile.LockFileName);
                 if (File.Exists(lockFilePath))
                 {
                     currentEntry.LockFilePath = lockFilePath;

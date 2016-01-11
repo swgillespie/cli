@@ -4,7 +4,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Microsoft.Extensions.JsonParser.Sources;
+using System.Linq;
+using Microsoft.Extensions.DependencyModel.Serialization;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Microsoft.DotNet.ProjectModel
 {
@@ -47,21 +50,21 @@ namespace Microsoft.DotNet.ProjectModel
             try
             {
                 using (var fs = File.OpenRead(globalJsonPath))
+                using (var reader = new JsonTextReader(new StreamReader(fs)))
                 {
-                    var reader = new StreamReader(fs);
-                    var jobject = JsonDeserializer.Deserialize(reader) as JsonObject;
+                    var jobject = JToken.ReadFrom(reader) as JObject;
 
                     if (jobject == null)
                     {
                         throw new InvalidOperationException("The JSON file can't be deserialized to a JSON object.");
                     }
 
-                    var projectSearchPaths = jobject.ValueAsStringArray("projects") ??
-                                             jobject.ValueAsStringArray("sources") ??
-                                             new string[] { };
+                    var projectSearchPaths = jobject.Value<JArray>("projects")?.Select(a => a.Value<string>())?.ToArray() ??
+                                             jobject.Value<JArray>("sources")?.Select(a => a.Value<string>())?.ToArray() ??
+                                             Array.Empty<string>();
 
                     globalSettings.ProjectSearchPaths = new List<string>(projectSearchPaths);
-                    globalSettings.PackagesPath = jobject.ValueAsString("packages");
+                    globalSettings.PackagesPath = jobject.Value<string>("packages");
                     globalSettings.FilePath = globalJsonPath;
                 }
             }
