@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.DotNet.ProjectModel.Compilation;
 using Microsoft.DotNet.ProjectModel.Graph;
 
 namespace Microsoft.DotNet.ProjectModel.Server.Models
@@ -51,21 +52,20 @@ namespace Microsoft.DotNet.ProjectModel.Server.Models
             return base.GetHashCode();
         }
 
-        public static DependencyDescription Create(LibraryDescription library, IEnumerable<DiagnosticMessage> diagnostics)
+        public static DependencyDescription Create(LibraryDescription library,
+                                                   List<DiagnosticMessage> diagnostics,
+                                                   Dictionary<string, LibraryExport> frameworkExports,
+                                                   Dictionary<string, LibraryExport> nonFrameworkExports)
         {
             return new DependencyDescription
             {
-                Name = library.Identity.Name,
-                DisplayName = GetLibraryDisplayName(library),
-                Version = library.Identity.Version?.ToString(),
+                Name = library.Identity.Type != LibraryType.ReferenceAssembly ? library.Identity.Name : $"fx/{library.Identity.Name}",
+                DisplayName = library.Identity.Name,
+                Version = library.Identity.Version?.ToNormalizedString(),
                 Type = library.Identity.Type.Value,
                 Resolved = library.Resolved,
                 Path = library.Path,
-                Dependencies = library.Dependencies.Select(dependency => new DependencyItem
-                {
-                    Name = dependency.Name,
-                    Version = dependency.VersionRange?.ToString() // TODO: review
-                }),
+                Dependencies = library.Dependencies.Select(dependency => FindDependencyItem(dependency, frameworkExports, nonFrameworkExports)),
                 Errors = diagnostics.Where(d => d.Severity == DiagnosticMessageSeverity.Error)
                                     .Select(d => new DiagnosticMessageView(d)),
                 Warnings = diagnostics.Where(d => d.Severity == DiagnosticMessageSeverity.Warning)
@@ -73,15 +73,28 @@ namespace Microsoft.DotNet.ProjectModel.Server.Models
             };
         }
 
-        private static string GetLibraryDisplayName(LibraryDescription library)
+        private static DependencyItem FindDependencyItem(LibraryRange dependency,
+                                                         Dictionary<string, LibraryExport> frameworkExports,
+                                                         Dictionary<string, LibraryExport> nonFrameworkExports)
         {
-            var name = library.Identity.Name;
-            if (library.Identity.Type == LibraryType.ReferenceAssembly && name.StartsWith("fx/"))
+            if (dependency.Target == LibraryType.ReferenceAssembly)
             {
-                name = name.Substring(3);
+                var identity = frameworkExports[dependency.Name].Library.Identity;
+                return new DependencyItem
+                {
+                    Name = $"fx/{identity.Name}",
+                    Version = identity.Version?.ToNormalizedString()
+                };
             }
-
-            return name;
+            else
+            {
+                var identity = nonFrameworkExports[dependency.Name].Library.Identity;
+                return new DependencyItem
+                {
+                    Name = identity.Name,
+                    Version = identity.Version?.ToNormalizedString()
+                };
+            }
         }
     }
 }
