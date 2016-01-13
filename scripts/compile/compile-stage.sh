@@ -105,16 +105,9 @@ fi
 # Make OUTPUT_DIR Folder Accessible
 chmod -R a+r $OUTPUT_DIR
 
-# Copy DNX in to OUTPUT_DIR
-if [ ! -d $OUTPUT_DIR/bin/dnx ]; then
-    cp -R $DNX_ROOT $OUTPUT_DIR/bin/dnx
-fi
-
-# Copy and CHMOD the dotnet-dnx script
-if [ ! -f $OUTPUT_DIR/bin/dotnet-dnx ]; then
-    cp $REPOROOT/scripts/dotnet-dnx.sh $OUTPUT_DIR/bin/dotnet-dnx
-    chmod a+x $OUTPUT_DIR/bin/dotnet-dnx
-fi
+# Copy and CHMOD the dotnet-nuget3 script
+cp $REPOROOT/scripts/dotnet-nuget3.sh $OUTPUT_DIR/bin/dotnet-nuget3
+chmod a+x $OUTPUT_DIR/bin/dotnet-nuget3
 
 # No compile native support in centos yet
 # https://github.com/dotnet/cli/issues/453

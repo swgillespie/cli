@@ -23,7 +23,7 @@ namespace Microsoft.DotNet.Tools.Test.Utilities
         {
             if (_temps != null)
             {
-                DisposeAll(_temps);
+                //DisposeAll(_temps);
                 _temps.Clear();
             }
         }

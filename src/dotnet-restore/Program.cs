@@ -20,6 +20,7 @@ namespace Microsoft.DotNet.Tools.Restore
     {
         private static readonly string DefaultRid = PlatformServices.Default.Runtime.GetLegacyRestoreRuntimeIdentifier();
 
+
         public static int Main(string[] args)
         {
             DebugHelper.HandleDebugSwitch(ref args);
@@ -30,12 +31,17 @@ namespace Microsoft.DotNet.Tools.Restore
                 FullName = ".NET project dependency restorer",
                 Description = "Restores dependencies listed in project.json"
             };
-            
+
+            // Parse --quiet, because we have to handle that specially since NuGet3 has a different
+            // "--verbosity" switch that goes BEFORE the command
+            var quiet = args.Any(s => s.Equals("--quiet", StringComparison.OrdinalIgnoreCase));
+            args = args.Where(s => !s.Equals("--quiet", StringComparison.OrdinalIgnoreCase)).ToArray();
+
             app.OnExecute(() =>
             {
                 try
                 {
-                    var projectRestoreResult = Dnx.RunRestore(args);
+                    var projectRestoreResult = Commands.RunRestore(args, quiet);
 
                     var restoreTasks = GetRestoreTasks(args);
 
@@ -43,7 +49,7 @@ namespace Microsoft.DotNet.Tools.Restore
                     {
                         var project = ProjectReader.GetProject(restoreTask.ProjectPath);
 
-                        RestoreTools(project, restoreTask);
+                        RestoreTools(project, restoreTask, quiet);
                     }
 
                     return projectRestoreResult;
@@ -100,19 +106,19 @@ namespace Microsoft.DotNet.Tools.Restore
             return firstArg.EndsWith(Project.FileName) && File.Exists(firstArg);
         }
 
-        private static void RestoreTools(Project project, RestoreTask restoreTask)
+        private static void RestoreTools(Project project, RestoreTask restoreTask, bool quiet)
         {
             foreach (var tooldep in project.Tools)
             {
-                RestoreTool(tooldep, restoreTask);
+                RestoreTool(tooldep, restoreTask, quiet);
             }
         }
 
-        private static void RestoreTool(LibraryRange tooldep, RestoreTask restoreTask)
+        private static void RestoreTool(LibraryRange tooldep, RestoreTask restoreTask, bool quiet)
         {
             var tempPath = Path.Combine(restoreTask.ProjectDirectory, Guid.NewGuid().ToString(), "bin");
 
-            RestoreToolToPath(tooldep, restoreTask.Arguments, tempPath);
+            RestoreToolToPath(tooldep, restoreTask.Arguments, tempPath, quiet);
 
             CreateDepsInPackageCache(tooldep, tempPath);
 
@@ -157,31 +163,30 @@ namespace Microsoft.DotNet.Tools.Restore
             File.Move(Path.Combine(context.ProjectDirectory, "bin" + FileNameSuffixes.Deps), depsPath);
         }
 
-        private static void RestoreToolToPath(LibraryRange tooldep, IEnumerable<string> args, string tempPath)
+        private static void RestoreToolToPath(LibraryRange tooldep, IEnumerable<string> args, string tempPath, bool quiet)
         {
             Directory.CreateDirectory(tempPath);
             var projectPath = Path.Combine(tempPath, Project.FileName);
 
             Console.WriteLine($"Restoring Tool '{tooldep.Name}' for '{projectPath}' in '{tempPath}'");
 
-            File.WriteAllText(projectPath, GenerateProjectJsonContents(new[] {"dnxcore50"}));
-            Dnx.RunPackageInstall(tooldep, projectPath, args);
-            Dnx.RunRestore(new [] { $"\"{projectPath}\"", "--runtime", $"{DefaultRid}"}.Concat(args));
+            File.WriteAllText(projectPath, GenerateProjectJsonContents(new[] {"dnxcore50"}, tooldep));
+            Commands.RunRestore(new [] { $"\"{projectPath}\"", "--runtime", $"{DefaultRid}"}.Concat(args), quiet);
         }
 
-        private static string GenerateProjectJsonContents(IEnumerable<string> frameworks = null)
+        private static string GenerateProjectJsonContents(IEnumerable<string> frameworks, LibraryRange tooldep)
         {
             var sb = new StringBuilder();
             sb.AppendLine("{");
-            if (frameworks != null)
+            sb.AppendLine("    \"dependencies\": {");
+            sb.AppendLine($"        \"{tooldep.Name}\": \"{tooldep.VersionRange.OriginalString}\"");
+            sb.AppendLine("    },");
+            sb.AppendLine("    \"frameworks\": {");
+            foreach (var framework in frameworks)
             {
-                sb.AppendLine("  \"frameworks\":{");
-                foreach (var framework in frameworks)
-                {
-                    sb.AppendLine($"    \"{framework}\":{{}}");
-                }
-                sb.AppendLine("    }");
+                sb.AppendLine($"        \"{framework}\": {{}}");
             }
+            sb.AppendLine("    }");
             sb.AppendLine("}");
             var pjContents = sb.ToString();
             return pjContents;

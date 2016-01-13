@@ -92,15 +92,8 @@ if (-not (Test-Path "$OutputDir\bin\csc.ni.exe")) {
     _cmd "$RepoRoot\scripts\crossgen\crossgen_roslyn.cmd ""$OutputDir"""
 }
 
-# Copy dnx into stage OutputDir
-if (-not (Test-Path "$OutputDir\bin\dnx\")) {
-    cp -rec "$DnxRoot\" "$OutputDir\bin\dnx\"
-}
-
-# Copy in the dotnet-dnx script
-if (-not (Test-Path "$OutputDir\bin\dotnet-dnx.cmd")) {
-    cp "$RepoRoot\scripts\dotnet-dnx.cmd" "$OutputDir\bin\dotnet-dnx.cmd"
-}
+# Copy in the dotnet-nuget3 script
+cp "$RepoRoot\scripts\dotnet-nuget3.cmd" "$OutputDir\bin\dotnet-nuget3.cmd"
 
 # Copy in AppDeps
 if (-not (Test-Path "$OutputDir\bin\appdepsdk\")) {

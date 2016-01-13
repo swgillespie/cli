@@ -4,7 +4,7 @@
 # Licensed under the MIT license. See LICENSE file in the project root for full license information.
 #
 
-set -e
+# dotnet-nuget3 script to be copied across to the final package
 
 SOURCE="${BASH_SOURCE[0]}"
 while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
@@ -14,13 +14,4 @@ while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symli
 done
 DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 
-source "$DIR/../common/_common.sh"
-
-header "Restoring packages"
-
-$DNX_ROOT/dnu restore "$REPOROOT/src" --quiet "$NOCACHE"
-$DNX_ROOT/dnu restore "$REPOROOT/test" --quiet "$NOCACHE"
-$DNX_ROOT/dnu restore "$REPOROOT/tools" --quiet "$NOCACHE"
-set +e
-$DNX_ROOT/dnu restore "$REPOROOT/testapp" --quiet "$NOCACHE" >/dev/null 2>&1
-set -e
+exec "$DIR/corehost" "$DIR/NuGet.CommandLine.XPlat.dll" "$@"
