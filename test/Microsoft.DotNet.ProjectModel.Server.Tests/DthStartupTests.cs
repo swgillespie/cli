@@ -21,6 +21,21 @@ namespace Microsoft.DotNet.ProjectModel.Server.Tests
         }
 
         [Fact]
+        public void Fast()
+        {
+            var projectPath = @"C:\code\aspnet5-beta8\src\RC1SignOff";
+
+            using (var server = new DthTestServer(_testHelper.LoggerFactory))
+            using (var client = new DthTestClient(server))
+            {
+                client.Initialize(projectPath);
+
+                File.WriteAllText("sample1.json", client.DrainTillFirst(MessageTypes.Dependencies).Payload.ToString());
+                File.WriteAllText("sample2.json", client.DrainTillFirst(MessageTypes.Dependencies).Payload.ToString());
+            }
+        }
+
+        [Fact]
         public void DthStartup_GetProjectInformation()
         {
             var projectPath = _testHelper.FindSampleProject("EmptyConsoleApp");

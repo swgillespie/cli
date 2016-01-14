@@ -32,7 +32,7 @@ namespace Microsoft.DotNet.ProjectModel
                     return true;
                 }
 
-                if (LastProjectFileWriteTime < File.GetLastWriteTime(ProjectFilePath))
+                if (LastProjectFileWriteTime.Ticks < File.GetLastWriteTime(ProjectFilePath).Ticks)
                 {
                     return true;
                 }
@@ -42,7 +42,7 @@ namespace Microsoft.DotNet.ProjectModel
                     return true;
                 }
 
-                if (LastLockFileWriteTime < File.GetLastWriteTime(LockFilePath))
+                if (LastLockFileWriteTime.Ticks < File.GetLastWriteTime(LockFilePath).Ticks)
                 {
                     return true;
                 }
