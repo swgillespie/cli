@@ -20,24 +20,36 @@
 #define symlinkEntrypointExecutable "/proc/curproc/exe"
 #endif
 
+// Try /usr/share/dotnet and /usr/local/share/dotnet/cli
+// TODO: These paths should be consistent
+const char* candidate_locations[] = {
+  "/usr/share/dotnet/runtime/coreclr",
+  "/usr/local/share/dotnet/runtime/coreclr",
+  "/usr/share/dotnet-nightly/runtime/coreclr",
+  "/usr/local/share/dotnet-nightly/runtime/coreclr"
+};
+
+const size_t candidate_location_num = sizeof(candidate_locations) / sizeof(candidate_locations[0]);
+
 bool pal::find_coreclr(pal::string_t* recv)
 {
-    pal::string_t candidate;
-    pal::string_t test;
-
-    // Try /usr/share/dotnet and /usr/local/share/dotnet/cli
-    // TODO: These paths should be consistent
-    candidate.assign("/usr/share/dotnet/runtime/coreclr");
-    if (coreclr_exists_in_dir(candidate)) {
+    auto check_candidate = [&](const char* location) {
+      pal::string_t candidate;
+      candidate.assign(location);
+      if (coreclr_exists_in_dir(candidate)) {
         recv->assign(candidate);
         return true;
+      }
+
+      return false;
+    };
+
+    for (int i = 0; i < candidate_location_num; i++) {
+      if (check_candidate(candidate_locations[i])) {
+        return true;
+      }
     }
 
-    candidate.assign("/usr/local/share/dotnet/runtime/coreclr");
-    if (coreclr_exists_in_dir(candidate)) {
-        recv->assign(candidate);
-        return true;
-    }
     return false;
 }
 
